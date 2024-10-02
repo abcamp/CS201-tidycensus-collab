@@ -2,7 +2,7 @@
 
 This repository is used as an exercise in github collaboration in its most basic form!
 
-We'll use tidycensus_intro.Rmd as the collaborative activity.
+We'll use tidycensus_intro.Rmd as starting point for our collaborative activity.
 
 For collaboration:
 
