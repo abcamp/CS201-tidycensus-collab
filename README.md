@@ -15,6 +15,6 @@ For collaboration:
 7. Save, commit, and push!
 8. Pull! Did you get a copy of your partner's file?
 
-Owner: 
+Owner: Name 1
 
-Collaborator: Name
+Collaborator: Name 2
