@@ -237,10 +237,55 @@ This may cause you to think!!
     - We can explore this with correlation matricies and machine learning tools that we can discuss in the future
 ```
 
-## Challenge
+------------------------------------------------------------------------
 
-Can you replace family poverty with another variable and
+## Challenge Time!!
+
+Can you replace family poverty with another variable and:
 
 1.  Map it
 2.  Show the variable over time
-3.  Show the variables relationship with education
+3.  Show the variable's relationship with education (or another variable of your choosing)
+4.  Describe what you found?
+
+Directions:
+
+1.  One person save as tidycensus_intro-collab.Rmd, commit & push. The other person pull!
+
+2.  Take turns! Who will do what? Be careful not to overwrite one another.
+
+3.  Paste your challenge answers below
+
+### Challenge: Import Data
+
+Investigating (insert variable here) on Oahu at the census tract level.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Mapping
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Time Series
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Scatter Plot
+
+Exploring the relationship between (insert variable here) and (insert variable here) with a scatter plot
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Describe what you found
