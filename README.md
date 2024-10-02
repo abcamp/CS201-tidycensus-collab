@@ -14,3 +14,7 @@ For collaboration:
 6. Both O & C open tidycensus_intro.Rmd. Save a copy with "-yourname."
 7. Save, commit, and push!
 8. Pull! Did you get a copy of your partner's file?
+
+Owner: 
+
+Collaborator: Name
