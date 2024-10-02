@@ -1,0 +1,291 @@
+---
+title: "An Introduction to the tidycensus R Package"
+author: "Connor Flynn & Dr. Catherine Brockway"
+date: "1/24/2024"
+output: html_document
+---
+
+Hello and welcome to our Introduction to R for Non-Profits Workshop :)
+
+*Goals* of this R Markdown (Rmd)
+
+```         
+1. Import data using an R package connected to an API (Application Programming Interface)
+  - In other words, we don't have to:
+   - manually go to a website 
+   - hit download
+   - move data from downloads to appropriate folder
+   - write code (ex. read_csv()) to import the data into R
+- Instead, we [request an API key here](https://api.census.gov/data/key_signup.html)
+  - Place our unique api key in the code below
+  - Import all the census data we would like with the following function
+    - get_acs()
+  - Explore which variables exist (depending on survey) with the following function
+    - load_variables()
+2. Visualize Family Poverty Data in Honolulu County
+  - Map
+  - Time Series
+  - Scatter plot with high school diploma attainment
+  
+```
+
+## Load in Packages
+
+It may be helpful to think of packages as toolboxes which contain functions, the tools
+
+In order to utilize a package and it's functions we need to do 2 things:
+
+```         
+1. Install the package (usally done in the console: type install.packages("name of package you want to install"), but today I have included that code in this R Markdown)
+    - You only have to do this once
+2. Load the package into your current R Session
+    - Do this in the first code chunk in the R Markdown by typing library(name of package you want to load into you R session)
+    - Do this in every R Markdown that utilizes those packages
+```
+
+If you ever receive the error message: "package name" does not exist, the fix is simple: - Go to the console in R Studio and type install.packages("name of package you want to install")
+
+In more recent versions of R Studio, you may see a yellow ribbon at the top of the notebook that recognizes packages in the notebook that you do not have installed. It will prompt you with an option to click and install them
+
+```{r setup, eval=FALSE}
+install.packages("tidycensus")
+#install.packages("tidyverse")
+#install.packages("reactable")
+install.packages("ggiraph")
+install.packages("ggpubr")
+```
+
+```{r, message=FALSE}
+library(tidycensus)  # star of the show, what we will use to import data
+
+library(tidyverse) # most popular R Package for manipulating data
+
+library(reactable) # makes fun, nice looking, interactive tables
+
+library(ggiraph) # makes static graphs and maps interactive
+
+library(ggpubr) # does some statistics and prints the results on our graphs
+
+options(progress_enabled=FALSE) # picky but i didn't want the progress bar appearing in pdf
+```
+
+## Define API Key
+
+[Request Here](https://api.census.gov/data/key_signup.html) Place the API Key emailed to you in the code below replacing 06f9dcf5172cd1b403f9a6c34beea0d7929604f3 with your own
+
+```{r Define API Key, message=FALSE}
+census_api_key("06f9dcf5172cd1b403f9a6c34beea0d7929604f3")
+```
+
+Now that we have access to census data, *what variables can we explore?*
+
+This code chunk below shows us all the variables from the American Community Survey (ACS) 1 Year Survey Data Profiles for 2022
+
+Data Profiles have the most frequently requested social, economic, housing, and demographic data. Each of these four subject areas is a separate data profile. The Data Profiles summarize the data for a single geographic area, both numbers and percent, to cover the most basic data on all topics.
+
+Here is an [amazing guide to navigating census data and using tidycensus](https://walker-data.com/census-r/index.html)
+
+```{r Import ACS Data}
+acs_2022_variables <- load_variables(2022, "acs1/profile")
+```
+
+The dataframe we just created (acs_2022_variables) has all the info we need, but is pretty bland Let's create a table that is prettier and easier to navigate - works best when knitted
+
+```{r Reactable}
+reactable(acs_2022_variables, filterable = TRUE, showPageSizeOptions = TRUE, minRows = 10)
+```
+
+## Import Data
+
+Let's investigate family poverty on Oahu at the census tract level
+
+DP03_0119P is the code for Percent!!PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL!!All families
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+oahu_family_poverty <- get_acs(
+  geography = "tract",
+  variables = c(percent_of_families_with_income_below_poverty_line = "DP03_0119P"),
+  state = "HI",
+  county = "Honolulu",
+  geometry = TRUE,
+  output = "wide",
+  year = 2022
+) %>% 
+  dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900") # Tract in Northwestern Hawaiian Islands that makes map very small and Mamala Bay Golf Course that has %100 percent of families living below the poverty line
+```
+
+Congratulations! You have successfully imported census data into R
+
+Now, let's map the data
+
+## Mapping
+
+```{r}
+
+family_poverty_map <- ggplot(oahu_family_poverty) +
+  geom_sf_interactive(
+    aes(
+      fill = percent_of_families_with_income_below_poverty_lineE,
+      tooltip = paste(NAME, ": ", percent_of_families_with_income_below_poverty_lineE, "%"),
+      data_id = NAME
+    )
+  ) +
+  scale_fill_viridis_c(option = "magma") +
+  theme_void() 
+
+girafe(ggobj = family_poverty_map, width = 700, height = 400)
+
+  
+
+
+```
+
+Here is a [list of the Tract Names with reference numbers](https://files.hawaii.gov/dbedt/census/census_2020/data/2020-tract-names.pdf)
+
+Now let's look at family poverty in Honolulu County over time
+
+## Time Series
+
+```{r, message=FALSE}
+years <- 2010:2019
+names(years) <- years
+
+family_poverty_2009_2019 <- map_dfr(years, ~{
+  get_acs(
+    geography = "county",
+    variables = c(percent_of_families_with_income_below_poverty_line = "DP03_0119P"),
+    state = "HI",
+    county = "Honolulu",
+    year = .x,
+    survey = "acs1"
+  )
+}, .id = "year")
+```
+
+```{r, warning=FALSE}
+ggplot(family_poverty_2009_2019, aes(x = year, y = estimate, group = 1)) + 
+  geom_line() + 
+  geom_point()
+```
+
+This graph is okay, but we can do alot to make it more informative and nicer too look at
+
+```{r, warning=FALSE}
+ggplot(family_poverty_2009_2019, aes(x = year, y = estimate, group = 1)) + 
+  geom_ribbon(aes(ymax = estimate + moe, ymin = estimate - moe), 
+              fill = "steelblue",
+              alpha = 0.4) + 
+  geom_line(color = "steelblue") + 
+  geom_point(color = "steelblue", size = 2) + 
+  theme_minimal() + 
+  #scale_y_continuous(labels = label_dollar(scale = .001, suffix = "k")) + 
+  labs(title = "Percentage of Families Under the Poverty Line: Honolulu County",
+       x = "Year",
+       y = "%",
+       caption = "Shaded area represents margin of error around the estimate")
+```
+
+## Scatter Plot
+
+Let's explore the relationship between poverty and education with a scatter plot
+
+```{r, message=FALSE}
+oahu_family_poverty_college_education <- get_acs(
+  geography = "tract",
+  variables = c(percent_of_families_with_income_below_poverty_line = "DP03_0119P",
+                percent_of_indivivuals_with_bachelors_degree_or_higher = "DP02_0065P"),
+  state = "HI",
+  county = "Honolulu",
+  #geometry = TRUE,
+  output = "wide",
+  year = 2021
+) %>% 
+  dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900")
+
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(oahu_family_poverty_college_education, aes(x = percent_of_families_with_income_below_poverty_lineE,
+                                             y = percent_of_indivivuals_with_bachelors_degree_or_higherE)) +
+  geom_point() +
+  geom_smooth() +
+  stat_cor() +
+  theme_minimal()
+  
+```
+
+This is pretty interesting
+
+With each point being a census tract, our graph hints that there is some relationship between poverty and education at the tract level
+
+```         
+    - The number with the "R =" up top tells us that the correlation coefficient is -0.38
+      - This is on a scale from -1 to 1
+      - Negative correlations describe relationships where one variable increases, the other decreases (and vice versa)
+      - Positive correlations describe relationships where variables move together (up or down)
+      - Here is a [really neat tool for exploring correlations](https://rpsychologist.com/correlation/)
+      
+    - So in summary, there is a negative correlation between the variables, but it is not very strong
+  
+```
+
+This may cause you to think!!
+
+```         
+    - What variables included in the American Community Survey are the most correlated with family poverty?
+    - We can explore this with correlation matricies and machine learning tools that we can discuss in the future
+```
+
+------------------------------------------------------------------------
+
+## Challenge Time!!
+
+Can you replace family poverty with another variable and:
+
+1.  Map it
+2.  Show the variable over time
+3.  Show the variable's relationship with education (or another variable of your choosing)
+4.  Describe what you found?
+
+Directions:
+
+1.  One person save as tidycensus_intro-collab.Rmd, commit & push. The other person pull!
+
+2.  Take turns! Who will do what? Be careful not to overwrite one another.
+
+3.  Paste your challenge answers below
+
+### Challenge: Import Data
+
+Investigating (insert variable here) on Oahu at the census tract level.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Mapping
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Time Series
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Scatter Plot
+
+Exploring the relationship between (insert variable here) and (insert variable here) with a scatter plot
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Challenge: Describe what you found
