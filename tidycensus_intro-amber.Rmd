@@ -49,8 +49,8 @@ In more recent versions of R Studio, you may see a yellow ribbon at the top of t
 
 ```{r setup, eval=FALSE}
 install.packages("tidycensus")
-#install.packages("tidyverse")
-#install.packages("reactable")
+install.packages("tidyverse")
+install.packages("reactable")
 install.packages("ggiraph")
 install.packages("ggpubr")
 ```
@@ -104,7 +104,7 @@ DP03_0119P is the code for Percent!!PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCO
 ```{r, message=FALSE, warning=FALSE, results='hide'}
 oahu_family_poverty <- get_acs(
   geography = "tract",
-  variables = c(percent_of_families_with_income_below_poverty_line = "DP03_0119P"),
+  variables = c(percent_of_families_with_income_below_poverty_line = "DP02_0154P"),
   state = "HI",
   county = "Honolulu",
   geometry = TRUE,
@@ -289,3 +289,7 @@ Exploring the relationship between (insert variable here) and (insert variable h
 ```
 
 ### Challenge: Describe what you found
+
+earth/westernhem/pacific/hawaii/oahu/honolulu/kona/kaimuki/waialae/3140/ching/253.pdf
+
+254.pdf
