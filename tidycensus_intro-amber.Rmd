@@ -73,7 +73,7 @@ options(progress_enabled=FALSE) # picky but i didn't want the progress bar appea
 
 [Request Here](https://api.census.gov/data/key_signup.html) Place the API Key emailed to you in the code below replacing 06f9dcf5172cd1b403f9a6c34beea0d7929604f3 with your own
 
-(Mine is *9a95ef43f456a0f5bc42fc4a01ea65f2b2940a21)*
+(I'm using *9a95ef43f456a0f5bc42fc4a01ea65f2b2940a21)*
 
 ```{r Define API Key, message=FALSE}
 census_api_key("9a95ef43f456a0f5bc42fc4a01ea65f2b2940a21")
