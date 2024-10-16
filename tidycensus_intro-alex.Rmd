@@ -73,10 +73,8 @@ options(progress_enabled=FALSE) # picky but i didn't want the progress bar appea
 
 [Request Here](https://api.census.gov/data/key_signup.html) Place the API Key emailed to you in the code below replacing 06f9dcf5172cd1b403f9a6c34beea0d7929604f3 with your own
 
-(Mine is *9a95ef43f456a0f5bc42fc4a01ea65f2b2940a21)*
-
 ```{r Define API Key, message=FALSE}
-census_api_key("9a95ef43f456a0f5bc42fc4a01ea65f2b2940a21")
+census_api_key("06f9dcf5172cd1b403f9a6c34beea0d7929604f3")
 ```
 
 Now that we have access to census data, *what variables can we explore?*
@@ -260,42 +258,6 @@ Directions:
 
 ### Challenge: Import Data
 
-Investigating (insert variable here) on Oahu at the census tract level.
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-
-
-```
-
-### Challenge: Mapping
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-
-
-```
-
-### Challenge: Time Series
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-
-
-```
-
-### Challenge: Scatter Plot
-
-Exploring the relationship between (insert variable here) and (insert variable here) with a scatter plot
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-
-
-```
-
-### Challenge: Describe what you found
-
-## Veterans on Oahu (Alex and Rhyn)
-
-### Challenge: Import Data
-
 Investigating (Employment status over age of 16) on Oahu at the census tract level.
 
 ```{r, message=FALSE, warning=FALSE, results='hide'}
@@ -346,128 +308,21 @@ veteran_status_2009_2019 <- map_dfr(years, ~{
   )
 }, .id = "year")
 
-years2 <- setdiff(2010:2022, c(2020))
-names(years2) <- years2
-
-veteran_status_2009_2022 <- map_dfr(years2, ~{
-  get_acs(
-    geography = "county",
-    variables = c(percent_veterans = "DP02_0070P"),
-    state = "HI",
-    county = "Honolulu",
-    year = .x,
-    survey = "acs1"
-  )
-}, .id = "year")
-
-veteran_status_2009_2022 <- veteran_status_2009_2022 %>%
-  add_row(year = "2020", GEOID = "15003", NAME =  "Honolulu County, Hawaii", variable = "percent_veterans") %>%
-  arrange(year)
-
 ```
 
 ```{r, warning=FALSE}
 ggplot(veteran_status_2009_2019, aes(x = year, y = estimate, group = 1)) + 
   geom_line() + 
   geom_point()
-
-ggplot(veteran_status_2009_2022, aes(x = year, y = estimate, group = 1)) + 
-  geom_line() + 
-  geom_point()
 ```
 
-### 
+### Challenge: Scatter Plot
 
-## Foreign born population in Iowa (Lydia and Faith)
-
-### Challenge: Import Data
-
-Investigating (insert variable here) on Oahu at the census tract level.
+Exploring the relationship between (insert variable here) and (insert variable here) with a scatter plot
 
 ```{r, message=FALSE, warning=FALSE, results='hide'}
 
-iowa_foreign_born_population <- get_acs(
-  geography = "tract",
-  variables = c(percent_of_foreign_born_population_by_household = "DP02_0109P"),
-  state = "IA",
-  geometry = TRUE,
-  output = "wide",
-  year = 2022) 
-
-# %>% 
-# dplyr::mutate(NAME = gsub("Census Tract 4901; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>%
-# 
-# dplyr::mutate(NAME = gsub("Census Tract 4902; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>% 
-# 
-# dplyr::mutate(NAME = gsub("Census Tract 4903; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>% 
-#   
-# dplyr::mutate(NAME = gsub("Census Tract 4904; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME))
-
-iowa_foreign_born_population$NAME <- str_replace(iowa_foreign_born_population$NAME, "O'Brien", "OBrien")
-```
-
-### Challenge: Mapping
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-
-foreign_born_population_map <- ggplot(iowa_foreign_born_population) +
-  geom_sf_interactive(
-    aes(
-      fill = percent_of_foreign_born_population_by_householdE,
-      tooltip = paste(NAME, ": ", percent_of_foreign_born_population_by_householdE, "%"),
-      data_id = NAME
-    )
-  ) +
-  scale_fill_viridis_c(option = "magma") +
-  theme_void() 
-
-girafe(ggobj = foreign_born_population_map, width = 700, height = 400)
-```
-
-### Challenge: Time Series
-
-```{r, message=FALSE, warning=FALSE, results='hide'}
-years <- 2010:2019
-names(years) <- years
-
-foreign_born_2009_2019 <- map_dfr(years, ~{
-  get_acs(
-    geography = "state",
-    variables = c(percent_of_foreign_born_population_by_household = "DP02_0109P"),
-    state = "IA",
-    year = .x,
-    survey = "acs1"
-  )
-}, .id = "year")
-
-
-ggplot(foreign_born_2009_2019, aes(x = year, y = estimate, group = 1)) + 
-  geom_line() + 
-  geom_point()
-
-
-years2 <- setdiff(2009:2022, c(2020))
-names(years2) <- years2
-
-foreign_born_2009_2022 <- map_dfr(years2, ~{
-  get_acs(
-    geography = "state",
-    variables = c(percent_of_foreign_born_population_by_household = "DP02_0109P"),
-    state = "IA",
-    year = .x,
-    survey = "acs1"
-  )
-}, .id = "year")
-
-foreign_born_2009_2022 <- foreign_born_2009_2022 %>%
-  add_row(year = "2020", GEOID = "19", NAME =  "Iowa", variable = "percent_of_foreign_born_population_by_household") %>%
-  arrange(year)
-
-
-ggplot(foreign_born_2009_2022, aes(x = year, y = estimate, group = 1)) + 
-  geom_line() + 
-  geom_point()
 
 ```
 
-### 
+### Challenge: Describe what you found

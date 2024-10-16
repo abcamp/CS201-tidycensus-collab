@@ -157,7 +157,7 @@ family_poverty_2009_2019 <- map_dfr(years, ~{
     state = "HI",
     county = "Honolulu",
     year = .x,
-    survey = "acs1"
+    survey = "acs5"
   )
 }, .id = "year")
 ```
@@ -260,58 +260,64 @@ Directions:
 
 Investigating (insert variable here) on Oahu at the census tract level.
 
-\*Mehana and Alex Variable identification
-
-First variables for map: DP03_0014 = Estimate!! employment status own children of the household are under 6 years DP03_0016 = Estimate employment status own children of the house hold 6-17 years
-
-<<<<<<< HEAD
-=======
-Second variable for our scatter plot: DP05_0082 = estimate of Hispanic or Latino and race. total population. not Hispanic or Latino. Asian alone
-
->>>>>>> c17f35e (try!)
 ```{r, message=FALSE, warning=FALSE, results='hide'}
-acs_2022_variables <- get_acs(
+
+iowa_foreign_born_population <- get_acs(
   geography = "tract",
-  variables = c(percent_of_children_under6 = "DP03_0014P", percent_of_children_over6 = "DP03_0016P"), 
-  state = "CA",
-  county = "Orange",
+  variables = c(percent_of_foreign_born_population_by_household = "DP02_0109P"),
+  state = "IA",
   geometry = TRUE,
   output = "wide",
-  year = 2022)
+  year = 2022) %>% 
+  
+dplyr::mutate(NAME = gsub("Census Tract 4901; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>%
+
+dplyr::mutate(NAME = gsub("Census Tract 4902; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>% 
+
+dplyr::mutate(NAME = gsub("Census Tract 4903; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME)) %>% 
+  
+dplyr::mutate(NAME = gsub("Census Tract 4904; O'Brien County; Iowa", "Census Tract 4903; OBrien County; Iowa", NAME))
 
 ```
-
-
-
-```{r}
-children_california_map <- ggplot(acs_2022_variables) +
-  geom_sf_interactive(
-    aes(
-      fill = percent_of_children_under6E | percent_of_children_over6E, 
-      tooltip = paste(NAME, ": ", percent_of_children_under6E | percent_of_children_over6E, "%"),
-      data_id = NAME
-    )
-  ) +
-  scale_fill_viridis_d(option = "blue") +
-  theme_void() 
-
-girafe(ggobj = children_california_map, width = 800, height = 500)
-
-```
-
 
 ### Challenge: Mapping
 
 ```{r, message=FALSE, warning=FALSE, results='hide'}
 
+foreign_born_population_map <- ggplot(iowa_foreign_born_population) +
+  geom_sf_interactive(
+    aes(
+      fill = percent_of_foreign_born_population_by_householdE,
+      tooltip = paste(NAME, ": ", percent_of_foreign_born_population_by_householdE, "%"),
+      data_id = NAME
+    )
+  ) +
+  scale_fill_viridis_c(option = "magma") +
+  theme_void() 
 
+girafe(ggobj = foreign_born_population_map, width = 700, height = 400)
 ```
 
 ### Challenge: Time Series
 
 ```{r, message=FALSE, warning=FALSE, results='hide'}
+years <- 2010:2019
+names(years) <- years
+
+foreign_born_2009_2019 <- map_dfr(years, ~{
+  get_acs(
+    geography = "state",
+    variables = c(percent_of_foreign_born_population_by_household = "DP02_0109P"),
+    state = "IA",
+    year = .x,
+    survey = "acs1"
+  )
+}, .id = "year")
 
 
+ggplot(foreign_born_2009_2019, aes(x = year, y = estimate, group = 1)) + 
+  geom_line() + 
+  geom_point()
 ```
 
 ### Challenge: Scatter Plot
