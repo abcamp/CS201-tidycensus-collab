@@ -1,0 +1,258 @@
+---
+title: "tidycensus Intro & GitHub Collab"
+author: "Amber Camp" 
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+toc: true
+---
+
+## Install and Load Libraries
+
+```{r Libraries}
+install.packages("tidycensus")
+install.packages("reactable")
+install.packages("ggpubr")
+
+library(tidycensus)  # star of the show, what we will use to import data
+library(tidyverse) # you know her
+library(reactable) # makes nice looking, interactive tables
+library(ggiraph) # makes interactive graphs and maps
+library(ggpubr) # does some statistics and prints the results on our graphs
+options(progress_enabled = FALSE)
+```
+
+## Today's Data
+
+**OCT 2025 NOTE**: Some features may be unavailable due to government shutdown. Let's see...
+
+The data we will use for this activity comes directly from the US Census Bureau! This data is public and free, but does require some specialized knowledge/skill to acquire and use. You'll learn that today!
+
+You can always visit the [Census website](https://data.census.gov) and grab data from there. But there is another way: using an API!
+
+API stands for Application Programming Interface. Here is the idea:
+
+-   You [request a unique API key](https://api.census.gov/data/key_signup.html) from the Bureau (or any other org that offers this)
+
+-   Place your unique API key in the code below
+
+-   Import all the census data you want, as long as you follow [User Guide](https://www.census.gov/data/developers/guidance/api-user-guide.Help_&_Contact_Us.html)
+
+## Define API
+
+[Request your own](https://api.census.gov/data/key_signup.html) or use Amber's (below).
+
+```{r Define API Key, message=FALSE}
+census_api_key("3ddbca3bc661c490a8075e5a9417a4d63f686900")
+```
+
+## Import Variables
+
+Now let's bring in the variables for our data. We'll use data specifically from the American Community Survey 2023, which is conducted annually on a random (but representative) sample of about 3.5 million Americans.
+
+These variables from the American Community Survey (ACS) Data Profiles for 2023 show us the most frequently requested social, economic, housing, and demographic data. The Data Profiles summarize the data for a single geographic area, both numbers (estimates) and percents, to cover the most basic data on all topics.
+
+```{r Import ACS Variables}
+acs_2023_variables <- load_variables(2023, "acs5/profile")
+```
+
+The dataframe we just created (`acs_2023_variables`) has all the info we need, but is pretty bland. Try using `reactable` for something a bit more user-friendly.
+
+```{r Reactable}
+reactable(acs_2023_variables, filterable = TRUE, showPageSizeOptions = TRUE, minRows = 10)
+```
+
+## Import Data
+
+Let's investigate family poverty on Oahu at the census tract level.
+
+**DP03_0119P** is the code for Percent!!PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL!!All families
+
+```{r Import Data}
+oahu_poverty <- get_acs(
+  geography = "tract",
+  variables = c(percent_poverty = "DP03_0119P"),
+  state = "HI",
+  county = "Honolulu",
+  geometry = TRUE,
+  output = "wide",
+  year = 2023) %>% 
+  dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900") # filters out tract in NW Hawaiian Islands that makes map very small and Mamala Bay Golf Course that has %100 percent of families living below the poverty line(??)
+```
+
+Congratulations! You have successfully imported census data into R.
+
+`tidycensus` gives two versions of each variable in wide format: `E` for the estimate and `M` for the margin of error.
+
+Now, let's map the data
+
+## Mapping
+
+```{r Mapping}
+oahu_poverty_map <- ggplot(oahu_poverty) +
+  geom_sf_interactive(
+    aes(
+      fill = percent_povertyE,
+      tooltip = paste(NAME, ": ", percent_povertyE, "%"),
+      data_id = NAME)) +
+  scale_fill_viridis_c(option = "plasma") +
+  theme_void() 
+
+girafe(ggobj = oahu_poverty_map, width = 700, height = 400)
+
+```
+
+Here is a [list of the Tract Names with reference numbers](https://files.hawaii.gov/dbedt/census/census_2020/data/2020-tract-names.pdf)
+
+Now let's look at family poverty in Honolulu County over time
+
+## Try an example of your own
+
+```{r}
+# get the data
+
+
+# map it
+
+
+```
+
+## Back to Exploring Poverty...
+
+## Time Series
+
+```{r Get Time Data, message=FALSE}
+years <- 2014:2023 # specify years
+names(years) <- years
+
+oahu_poverty_2014_2023 <- map_dfr(years, ~{
+  get_acs(
+    geography = "county",
+    variables = c(percent_poverty = "DP03_0119P"),
+    state = "HI",
+    county = "Honolulu",
+    year = .x,
+    survey = "acs5")}, .id = "year")
+```
+
+```{r Plot Time Series, warning=FALSE}
+ggplot(oahu_poverty_2014_2023, aes(x = year, y = estimate, group = 1)) + 
+  geom_line() + 
+  geom_point() +
+  labs(title = "Honolulu County Poverty Rate (ACS Rolling 5-year estimates)",
+    x = "ACS Release Year (5-year window)",
+    y = "Percent in Poverty")
+```
+
+Reminder: Each point is a rolling window of 5 years of survey data. So, for example, the "2023" ACS 5-year dataset covers 2019–2023.
+
+We can do a lot to make it more informative and nicer to look at.
+
+```{r Cleaner Plot, warning=FALSE}
+ggplot(oahu_poverty_2014_2023, aes(x = year, y = estimate, group = 1)) + 
+  geom_ribbon(aes(ymax = estimate + moe, ymin = estimate - moe), 
+              fill = "steelblue",
+              alpha = 0.4) + 
+  geom_line(color = "steelblue") + 
+  geom_point(color = "steelblue", size = 2) + 
+  theme_minimal() + 
+  labs(title = "Honolulu County Poverty Rate (ACS Rolling 5-year estimates)",
+       x = "ACS Release Year (5-year window)",
+       y = "Percent in Poverty",
+       caption = "Shaded area represents margin of error around the estimate")
+
+```
+
+## Scatter Plot
+
+Let's explore the relationship between poverty and education with a scatter plot
+
+```{r Get Data for Scatter Plot, message=FALSE}
+oahu_family_poverty_college_education <- get_acs(
+  geography = "tract",
+  variables = c(percent_poverty = "DP03_0119P",
+                percent_BA = "DP02_0068P"),
+  state = "HI",
+  county = "Honolulu",
+  geometry = TRUE,
+  output = "wide",
+  year = 2023) %>% 
+  dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900")
+
+
+```
+
+```{r Scatter Plot, warning=FALSE, message=FALSE}
+ggplot(oahu_family_poverty_college_education, aes(x = percent_povertyE,y = percent_BAE)) +
+  geom_point() +
+  geom_smooth() + # adds a regression line (LOESS)
+  stat_cor() + # prints R and p
+  theme_minimal() + 
+  labs(title = "Comparing Rates of Higher Education to Poverty, Honolulu County",
+       subtitle = "ACS 5-year, 2023 release",
+       x = "Percent of Families Living Below the Poverty Line",
+       y = "Percent with a BA or higher",
+       caption = "Shaded area represents margin of error around the estimate")
+  
+```
+
+Interesting. With each point being a census tract, and a correlation coefficient (*R*) of -0.39, what is the relationship between poverty and education at the tract level in Honolulu County?
+
+------------------------------------------------------------------------
+
+## Challenge Time!!
+
+This could be a useful reference: <https://walker-data.com/census-r/index.html>
+
+Replace family poverty with another variable and:
+
+1.  Map it
+2.  Show the variable over time
+3.  Show the variable's relationship with education (or another variable of your choosing)
+4.  Describe what you found
+
+Directions:
+
+1.  One person save as tidycensus_intro-collab.Rmd, commit & push. The other person pull!
+
+2.  Take turns! Who will do what? Be careful not to overwrite one another.
+
+    -   I will be looking for at least 4 exchanges
+
+3.  Paste your challenge answers below
+
+REMEMBER! [Pull]{.underline} before working in the `-collab.qmd` file. [Save, Commit, and Push]{.underline} your changes when you are done. The next person should [Pull]{.underline} before working, and so on.
+
+### Import Data
+
+Investigating (insert variable here) on Oahu at the census tract level.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Mapping
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Time Series
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Scatter Plot
+
+Exploring the relationship between (insert variable here) and (insert variable here) with a scatter plot
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+
+
+```
+
+### Describe what you found
