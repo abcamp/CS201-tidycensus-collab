@@ -82,7 +82,7 @@ oahu_poverty <- get_acs(
 
 Congratulations! You have successfully imported census data into R.
 
-`tidycensus` gives two versions of each variable in wide format: `E` for the estimate and `M` for the margin of error.
+`tidycensus` gives two versions of each variable in wide format: `E` for the estimate and `M` for the margin of error.
 
 Now, let's map the data
 
