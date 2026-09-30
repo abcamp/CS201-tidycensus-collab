@@ -7,12 +7,12 @@ editor: visual
 toc: true
 ---
 
-## Install and Load Libraries
+## Install and Load Packages
 
 ```{r Libraries}
-install.packages("tidycensus")
-install.packages("reactable")
-install.packages("ggpubr")
+# install.packages("tidycensus")
+# install.packages("reactable")
+# install.packages("ggpubr")
 
 library(tidycensus)  # star of the show, what we will use to import data
 library(tidyverse) # you know her
@@ -24,42 +24,40 @@ options(progress_enabled = FALSE)
 
 ## Today's Data
 
-**OCT 2025 NOTE**: Some features may be unavailable due to government shutdown. Let's see...
-
 The data we will use for this activity comes directly from the US Census Bureau! This data is public and free, but does require some specialized knowledge/skill to acquire and use. You'll learn that today!
 
 You can always visit the [Census website](https://data.census.gov) and grab data from there. But there is another way: using an API!
 
 API stands for Application Programming Interface. Here is the idea:
 
--   You [request a unique API key](https://api.census.gov/data/key_signup.html) from the Bureau (or any other org that offers this)
+- You [request a unique API key](https://api.census.gov/data/key_signup.html) from the Bureau (or any other org that offers this)
 
--   Place your unique API key in the code below
+- Place your unique API key in the code below
 
--   Import all the census data you want, as long as you follow [User Guide](https://www.census.gov/data/developers/guidance/api-user-guide.Help_&_Contact_Us.html)
+- Import all the census data you want, as long as you follow [User Guide](https://www.census.gov/data/developers/guidance/api-user-guide.Help_&_Contact_Us.html)
 
 ## Define API
 
 [Request your own](https://api.census.gov/data/key_signup.html) or use Amber's (below).
 
 ```{r Define API Key, message=FALSE}
-census_api_key("3ddbca3bc661c490a8075e5a9417a4d63f686900")
+census_api_key("")
 ```
 
 ## Import Variables
 
-Now let's bring in the variables for our data. We'll use data specifically from the American Community Survey 2023, which is conducted annually on a random (but representative) sample of about 3.5 million Americans.
+Now let's bring in the variables for our data. We'll use data specifically from the American Community Survey 2024, which is conducted annually on a random (but representative) sample of about 3.5 million Americans.
 
-These variables from the American Community Survey (ACS) Data Profiles for 2023 show us the most frequently requested social, economic, housing, and demographic data. The Data Profiles summarize the data for a single geographic area, both numbers (estimates) and percents, to cover the most basic data on all topics.
+These variables from the American Community Survey (ACS) Data Profiles for 2024 show us the most frequently requested social, economic, housing, and demographic data. The Data Profiles summarize the data for a single geographic area, both numbers (estimates) and percents, to cover the most basic data on all topics.
 
 ```{r Import ACS Variables}
-acs_2023_variables <- load_variables(2023, "acs5/profile")
+acs_2024_variables <- load_variables(2024, "acs5/profile")
 ```
 
-The dataframe we just created (`acs_2023_variables`) has all the info we need, but is pretty bland. Try using `reactable` for something a bit more user-friendly.
+The dataframe we just created (`acs_2024_variables`) has all the info we need, but is pretty bland. Try using `reactable` for something a bit more user-friendly.
 
 ```{r Reactable}
-reactable(acs_2023_variables, filterable = TRUE, showPageSizeOptions = TRUE, minRows = 10)
+reactable(acs_2024_variables, filterable = TRUE, showPageSizeOptions = TRUE, minRows = 10)
 ```
 
 ## Import Data
@@ -76,7 +74,7 @@ oahu_poverty <- get_acs(
   county = "Honolulu",
   geometry = TRUE,
   output = "wide",
-  year = 2023) %>% 
+  year = 2024) %>% 
   dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900") # filters out tract in NW Hawaiian Islands that makes map very small and Mamala Bay Golf Course that has %100 percent of families living below the poverty line(??)
 ```
 
@@ -102,18 +100,35 @@ girafe(ggobj = oahu_poverty_map, width = 700, height = 400)
 
 ```
 
-Here is a [list of the Tract Names with reference numbers](https://files.hawaii.gov/dbedt/census/census_2020/data/2020-tract-names.pdf)
+Here is a [list of the Tract Names with reference numbers](https://files.hawaii.gov/dbedt/census/archive/acs/acs2020/5yr/2020-tract-names.pdf)
 
 Now let's look at family poverty in Honolulu County over time
 
 ## Try an example of your own
 
 ```{r}
-# get the data
-
+# get the data (looking at ____)
+NAME <- get_acs(
+  geography = "tract",
+  variables = c(NAME = "DP02_0158"),
+  state = "HI",
+  county = "Honolulu",
+  geometry = TRUE,
+  output = "wide",
+  year = 2024) %>% 
+  dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900")
 
 # map it
+oahu_unemployment_map <- ggplot(NAME) +
+  geom_sf_interactive(
+    aes(
+      fill = percent_unemploymentE,
+      tooltip = paste(NAME, ": ", percent_unemploymentE, "%"),
+      data_id = NAME)) +
+  scale_fill_viridis_c(option = "plasma") +
+  theme_void() 
 
+girafe(ggobj = oahu_unemployment_map, width = 700, height = 400)
 
 ```
 
@@ -122,10 +137,10 @@ Now let's look at family poverty in Honolulu County over time
 ## Time Series
 
 ```{r Get Time Data, message=FALSE}
-years <- 2014:2023 # specify years
+years <- 2014:2024 # specify years
 names(years) <- years
 
-oahu_poverty_2014_2023 <- map_dfr(years, ~{
+oahu_poverty_2014_2024 <- map_dfr(years, ~{
   get_acs(
     geography = "county",
     variables = c(percent_poverty = "DP03_0119P"),
@@ -136,7 +151,7 @@ oahu_poverty_2014_2023 <- map_dfr(years, ~{
 ```
 
 ```{r Plot Time Series, warning=FALSE}
-ggplot(oahu_poverty_2014_2023, aes(x = year, y = estimate, group = 1)) + 
+ggplot(oahu_poverty_2014_2024, aes(x = year, y = estimate, group = 1)) + 
   geom_line() + 
   geom_point() +
   labs(title = "Honolulu County Poverty Rate (ACS Rolling 5-year estimates)",
@@ -144,12 +159,12 @@ ggplot(oahu_poverty_2014_2023, aes(x = year, y = estimate, group = 1)) +
     y = "Percent in Poverty")
 ```
 
-Reminder: Each point is a rolling window of 5 years of survey data. So, for example, the "2023" ACS 5-year dataset covers 2019–2023.
+Reminder: Each point is a rolling window of 5 years of survey data. So, for example, the "2024" ACS 5-year dataset covers 2019–2024.
 
 We can do a lot to make it more informative and nicer to look at.
 
 ```{r Cleaner Plot, warning=FALSE}
-ggplot(oahu_poverty_2014_2023, aes(x = year, y = estimate, group = 1)) + 
+ggplot(oahu_poverty_2014_2024, aes(x = year, y = estimate, group = 1)) + 
   geom_ribbon(aes(ymax = estimate + moe, ymin = estimate - moe), 
               fill = "steelblue",
               alpha = 0.4) + 
@@ -176,7 +191,7 @@ oahu_family_poverty_college_education <- get_acs(
   county = "Honolulu",
   geometry = TRUE,
   output = "wide",
-  year = 2023) %>% 
+  year = 2024) %>% 
   dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900")
 
 
@@ -189,14 +204,14 @@ ggplot(oahu_family_poverty_college_education, aes(x = percent_povertyE,y = perce
   stat_cor() + # prints R and p
   theme_minimal() + 
   labs(title = "Comparing Rates of Higher Education to Poverty, Honolulu County",
-       subtitle = "ACS 5-year, 2023 release",
+       subtitle = "ACS 5-year, 2024 release",
        x = "Percent of Families Living Below the Poverty Line",
        y = "Percent with a BA or higher",
        caption = "Shaded area represents margin of error around the estimate")
   
 ```
 
-Interesting. With each point being a census tract, and a correlation coefficient (*R*) of -0.39, what is the relationship between poverty and education at the tract level in Honolulu County?
+Interesting. With each point being a census tract, and a correlation coefficient (*R*) of -0.41, what is the relationship between poverty and education at the tract level in Honolulu County?
 
 ------------------------------------------------------------------------
 
@@ -213,11 +228,11 @@ Replace family poverty with another variable and:
 
 Directions:
 
-1.  One person save as tidycensus_intro-collab.Rmd, commit & push. The other person pull!
+1.  One person save as `tidycensus_intro-collab.qmd`, commit & push. The other person pull!
 
 2.  Take turns! Who will do what? Be careful not to overwrite one another.
 
-    -   I will be looking for at least 4 exchanges
+    - I will be looking for at least 4 exchanges
 
 3.  Paste your challenge answers below
 
