@@ -7,7 +7,7 @@ editor: visual
 toc: true
 ---
 
-## Install and Load Packages
+## Install and Load Packages   kdjbfalskjhfsk
 
 ```{r Libraries}
 # install.packages("tidycensus")
@@ -108,7 +108,7 @@ Now let's look at family poverty in Honolulu County over time
 
 ```{r}
 # get the data (looking at computer & internet access)
-mine <- get_acs(
+amber <- get_acs(
   geography = "tract",
   variables = c(computer_access = "DP02_0152"),
   state = "HI",
@@ -119,11 +119,11 @@ mine <- get_acs(
   dplyr::filter(GEOID != "15003981200" & GEOID !="15003981900")
 
 # map it
-computer_map <- ggplot(mine) +
+computer_map <- ggplot(amber) +
   geom_sf_interactive(
     aes(
       fill = computer_accessE,
-      tooltip = paste(NAME, ": ", computer_accessE, "%"),
+      tooltip = paste(NAME, ": ", computer_accessE),
       data_id = NAME)) +
   scale_fill_viridis_c(option = "plasma") +
   theme_void() 
